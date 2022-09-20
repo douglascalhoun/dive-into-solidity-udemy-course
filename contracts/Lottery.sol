@@ -4,43 +4,39 @@ pragma solidity ^0.8.13;
 import "hardhat/console.sol";
 
 contract Lottery {
-    // declaring the state variables
-    address[] public players; //dynamic array of type address payable
+    address[] public players;
     address[] public gameWinners;
     address public owner;
 
-    // declaring the constructor
+    modifier onlyOwner(){
+        require(msg.sender == owner, "ONLY_OWNER");
+        _;
+    }
+
     constructor() {
-        // TODO: initialize the owner to the address that deploys the contract
+        owner = msg.sender;
     }
 
-    // declaring the receive() function that is necessary to receive ETH
     receive() external payable {
-        // TODO: require each player to send exactly 0.1 ETH
-        // TODO: append the new player to the players array
+        require(msg.value == 0.1 ether, "WRONG_FEE");
+        players.push(msg.sender);
     }
 
-    // returning the contract's balance in wei
-    function getBalance() public view returns (uint256) {
-        // TODO: restrict this function so only the owner is allowed to call it
-        // TODO: return the balance of this address
+    function getBalance() public view onlyOwner returns (uint256) {
+        return address(this).balance;
     }
 
-    // selecting the winner
-    function pickWinner() public {
-        // TODO: only the owner can pick a winner 
-        // TODO: owner can only pick a winner if there are at least 3 players in the lottery
+    function pickWinner() public onlyOwner {
+        require(players.length >= 3, "NOT_ENOUGH_PLAYERS");
 
         uint256 r = random();
-        address winner;
+        address payable winner;
 
-        // TODO: compute an unsafe random index of the array and assign it to the winner variable 
+        winner = payable(players[r % players.length]);
+        gameWinners.push(winner);
+        delete players;
 
-        // TODO: append the winner to the gameWinners array
-
-        // TODO: reset the lottery for the next round
-
-        // TODO: transfer the entire contract's balance to the winner
+        winner.call{value: address(this).balance}("");
     }
 
     // helper function that returns a big random integer
